@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { withErrorBoundary } from '../common/ErrorBoundary';
 import { useQuiz } from '../context/QuizContext';
 import { shuffleArray } from '../utils/biblicalAvatars';
 import AvatarDisplay from '../components/AvatarDisplay';
@@ -54,7 +55,17 @@ function QuizGamePage() {
       }
     };
 
-    loadQuiz();
+    let isMounted = true;
+    loadQuiz().catch(error => {
+      if (isMounted) {
+        console.error('Failed to load quiz:', error);
+        navigate('/');
+      }
+    });
+    
+    return () => {
+      isMounted = false;
+    };
   }, [quizId, getQuiz, currentPlayer, navigate, state.currentQuestion]);
 
   // Shuffle options when question changes
@@ -97,42 +108,51 @@ function QuizGamePage() {
   }, [timeLeft, showResult]);
 
   const handleTimeUp = useCallback(() => {
-    if (selectedAnswer === null) {
-      // Time's up without answer - lose a life
-      const updatedLives = Math.max(0, currentPlayer.lives - 1);
-      const timeSpentOnQuestion = quiz.timeType === 'perQuestion' 
-        ? quiz.timePerQuestion 
-        : Math.floor((quiz.totalTime * 60) / quiz.questions.length);
+    if (!quiz || !currentPlayer || selectedAnswer === null) return;
+    
+    // Time's up without answer - lose a life
+    const updatedLives = Math.max(0, currentPlayer.lives - 1);
+    const timeSpentOnQuestion = quiz.timeType === 'perQuestion'
+      ? quiz.timePerQuestion
+      : Math.floor((quiz.totalTime * 60) / quiz.questions.length);
       
-      dispatch({
-        type: 'SUBMIT_ANSWER',
-        payload: {
-          playerId: currentPlayer.id,
-          questionIndex: state.currentQuestion,
-          answer: null,
-          isCorrect: false,
-          timeSpent: timeSpentOnQuestion
-        }
-      });
+    dispatch({
+      type: 'SUBMIT_ANSWER',
+      payload: {
+        playerId: currentPlayer.id,
+        questionIndex: state.currentQuestion,
+        answer: null,
+        isCorrect: false,
+        timeSpent: timeSpentOnQuestion
+      }
+    });
 
-      updatePlayerScore(currentPlayer.id, currentPlayer.score, updatedLives);
-      submitAnswer(currentPlayer.id, quizId, state.currentQuestion, null, false, timeSpentOnQuestion);
-      
-      setShowResult(true);
-      
-      setTimeout(() => {
-        nextQuestion();
-      }, 3000);
-    }
-  }, [selectedAnswer, currentPlayer, dispatch, state.currentQuestion, quiz, updatePlayerScore, submitAnswer, quizId]);
+    updatePlayerScore(currentPlayer.id, currentPlayer.score, updatedLives);
+    submitAnswer(currentPlayer.id, quizId, state.currentQuestion, null, false, timeSpentOnQuestion);
+    
+    setShowResult(true);
+    
+    setTimeout(() => {
+      nextQuestion();
+    }, 3000);
+  }, [
+    selectedAnswer,
+    currentPlayer,
+    dispatch,
+    state.currentQuestion,
+    quiz,
+    updatePlayerScore,
+    submitAnswer,
+    quizId
+  ]);
 
-  const submitAnswerHandler = (answerIndex) => {
+  const submitAnswerHandler = useCallback((answerIndex) => {
     if (selectedAnswer !== null || showResult) return;
 
     setSelectedAnswer(answerIndex);
     const isCorrect = answerIndex === correctAnswerIndex;
-    const timeSpentOnQuestion = (quiz.timeType === 'perQuestion' 
-      ? quiz.timePerQuestion 
+    const timeSpentOnQuestion = (quiz.timeType === 'perQuestion'
+      ? quiz.timePerQuestion
       : Math.floor((quiz.totalTime * 60) / quiz.questions.length)) - timeLeft;
 
     let updatedPlayer = { ...currentPlayer };
@@ -175,9 +195,21 @@ function QuizGamePage() {
     setTimeout(() => {
       nextQuestion();
     }, 3000);
-  };
+  }, [
+    selectedAnswer,
+    showResult,
+    correctAnswerIndex,
+    quiz,
+    timeLeft,
+    currentPlayer,
+    dispatch,
+    state.currentQuestion,
+    updatePlayerScore,
+    submitAnswer,
+    quizId
+  ]);
 
-  const nextQuestion = () => {
+  const nextQuestion = useCallback(() => {
     if (state.currentQuestion + 1 >= quiz.questions.length) {
       // Quiz finished
       dispatch({ type: 'END_GAME' });
@@ -196,7 +228,7 @@ function QuizGamePage() {
       setShowResult(false);
       setTimeLeft(timeLimit);
     }
-  };
+  }, [quiz, quizId, dispatch, state.currentQuestion]);
 
   if (!quiz || !currentQuestion || !currentPlayer) {
     return (
@@ -463,4 +495,5 @@ function QuizGamePage() {
   );
 }
 
-export default QuizGamePage;
+
+export default withErrorBoundary(QuizGamePage);
