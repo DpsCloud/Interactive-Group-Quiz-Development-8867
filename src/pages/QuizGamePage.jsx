@@ -206,7 +206,7 @@ function QuizGamePage() {
     state.currentQuestion,
     updatePlayerScore,
     submitAnswer,
-    quizId
+    quizId,
   ]);
 
   const nextQuestion = useCallback(() => {
