@@ -8,6 +8,8 @@ import * as FiIcons from 'react-icons/fi';
 
 const { FiArrowLeft, FiPlus, FiTrash2, FiShuffle } = FiIcons;
 
+import AuthWrapper from '../components/AuthWrapper';
+
 function CreateQuizPage() {
   const navigate = useNavigate();
   const { createQuiz } = useQuiz();
@@ -91,13 +93,17 @@ function CreateQuizPage() {
   };
 
   return (
-    <div className="min-h-screen p-4">
-      <div className="max-w-4xl mx-auto">
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-2xl shadow-xl p-6 md:p-8"
-        >
+    <AuthWrapper>
+      {/* Main container */}
+      <div className="min-h-screen p-4">
+        {/* Content container */}
+        <div className="max-w-4xl mx-auto">
+          {/* Animated card */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white rounded-2xl shadow-xl p-6 md:p-8"
+          >
           {/* Header */}
           <div className="flex items-center gap-4 mb-8">
             <button
@@ -249,9 +255,8 @@ function CreateQuizPage() {
                   </div>
                 </motion.div>
               ))}
+              </div>
             </div>
-          </div>
-
           {/* Create Button */}
           <div className="flex justify-end">
             <button
@@ -272,6 +277,7 @@ function CreateQuizPage() {
         </motion.div>
       </div>
     </div>
+    </AuthWrapper>
   );
 }
 

@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS quizzes_biblical123 (
   shuffle_answers BOOLEAN DEFAULT true,
   questions JSONB NOT NULL,
   status TEXT DEFAULT 'waiting' CHECK (status IN ('waiting', 'playing', 'finished')),
+  owner_id UUID REFERENCES auth.users(id),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -44,10 +45,10 @@ ALTER TABLE quizzes_biblical123 ENABLE ROW LEVEL SECURITY;
 ALTER TABLE players_biblical123 ENABLE ROW LEVEL SECURITY;
 ALTER TABLE game_answers_biblical123 ENABLE ROW LEVEL SECURITY;
 
--- Create Policies for Public Access
+-- Create Policies for Quizzes Access
 CREATE POLICY "Public read access on quizzes" ON quizzes_biblical123 FOR SELECT USING (true);
-CREATE POLICY "Public insert access on quizzes" ON quizzes_biblical123 FOR INSERT WITH CHECK (true);
-CREATE POLICY "Public update access on quizzes" ON quizzes_biblical123 FOR UPDATE USING (true);
+CREATE POLICY "Owner can manage quizzes" ON quizzes_biblical123
+  FOR ALL USING (auth.uid() = owner_id) WITH CHECK (auth.uid() = owner_id);
 
 CREATE POLICY "Public read access on players" ON players_biblical123 FOR SELECT USING (true);
 CREATE POLICY "Public insert access on players" ON players_biblical123 FOR INSERT WITH CHECK (true);
